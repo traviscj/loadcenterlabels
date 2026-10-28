@@ -1,0 +1,1 @@
+{ "name": "Load Center Labels", "short_name": "Panel labels", "start_url": "./", "display": "standalone", "background_color": "#f4f4f1", "theme_color": "#16181a", "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }] }

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Load Center Labels</title>
+<meta name="description" content="Free, offline breaker-panel directory maker: door cards, per-breaker labels, leg-balance summary. Unverified readings print visibly. No account, no tracking.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="./manifest.webmanifest">
+<style id="pagestyle">@page { size: letter; margin: 0.5in; }</style>
+</head>
+<body>
+<a class="skip" href="#grid">Skip to circuit grid</a>
+<header class="top">
+  <h1><span class="logo" aria-hidden="true">▤</span> loadcenterlabels</h1>
+  <span class="tagline">breaker-panel directories · door card · breaker labels · leg balance · runs offline, nothing leaves your browser</span>
+  <nav class="toolbar" aria-label="Document">
+    <label class="inl">panel <select id="panelSel" aria-label="Active panel"></select></label>
+    <button id="btnNew" type="button" title="Add a blank panel">+ panel</button>
+    <button id="btnDup" type="button" title="Duplicate this panel">dup</button>
+    <button id="btnDel" type="button" title="Delete this panel">del</button>
+    <span class="sep"></span>
+    <label class="inl">example <select id="exSel" aria-label="Load an example"><option value="">load…</option></select></label>
+    <label class="btnlike" title="Import CSV or JSON">import<input id="fileIn" type="file" accept=".csv,.json,.txt,text/csv,application/json" hidden></label>
+    <button id="btnCSV" type="button">csv</button>
+    <button id="btnJSON" type="button">json</button>
+    <button id="btnShare" type="button" title="Copy a link containing all panels (compressed into the URL hash; never sent to a server)">share link</button>
+    <button id="btnPrint" type="button" class="primary" title="Print the active output (Ctrl/Cmd+P)">print</button>
+  </nav>
+  <output id="status" class="status" role="status" aria-live="polite"></output>
+</header>
+
+<main class="split">
+  <section class="editor" aria-label="Panel editor">
+    <fieldset class="meta">
+      <legend>panel</legend>
+      <label>name <input id="m_name" autocomplete="off"></label>
+      <label>location <input id="m_location" autocomplete="off"></label>
+      <label class="wide">brand / model <input id="m_brand" autocomplete="off"></label>
+      <label>main A <input id="m_mainAmps" type="number" min="1" max="4000" inputmode="numeric"></label>
+      <label>spaces <input id="m_spaces" type="number" min="2" max="84" inputmode="numeric"></label>
+      <label>numbering <select id="m_numbering"><option value="odd-even">odd left / even right</option><option value="sequential">sequential (down L, then R)</option></select></label>
+      <label>system <select id="m_system"><option value="split">120/240 V split-phase</option><option value="three">3-phase (A/B/C)</option></select></label>
+      <label>surveyed <input id="m_date" type="date"></label>
+      <label>verified by <input id="m_verifiedBy" autocomplete="off"></label>
+      <label class="full">panel notes <textarea id="m_notes" rows="2"></textarea></label>
+    </fieldset>
+    <div class="gridbar">
+      <button id="btnAdd" type="button">+ row</button>
+      <button id="btnSort" type="button">sort by slot</button>
+      <button id="btnFill" type="button" title="Add an empty row for every unused slot">rows for empty slots</button>
+      <button id="btnClear" type="button" title="Delete rows with no name and no amps">prune blank rows</button>
+      <span class="hint">↑/↓ move rows · Enter = next row (adds one at the end) · slot "7" or "7-9" · amps "15?" = unverified</span>
+    </div>
+    <div class="gridwrap">
+      <table class="grid" id="grid" aria-label="Circuits">
+        <thead><tr>
+          <th scope="col" title="Leg (bus phase) for the first pole">leg</th>
+          <th scope="col">slot</th><th scope="col">amps</th><th scope="col">poles</th>
+          <th scope="col" title="Tandem / twin breaker (two circuits in one space)">tdm</th>
+          <th scope="col">circuit</th><th scope="col">protection</th><th scope="col">note</th>
+          <th scope="col" title="Needs verification">verify</th><th scope="col"><span class="sr">delete</span></th>
+        </tr></thead>
+        <tbody id="gridBody"></tbody>
+      </table>
+    </div>
+    <div id="findSummary" class="findsum" aria-live="polite"></div>
+  </section>
+
+  <section class="output" aria-label="Outputs">
+    <div class="otabs" role="tablist" aria-label="Output">
+      <button role="tab" id="tab-card" aria-controls="preview" data-view="card">door card</button>
+      <button role="tab" id="tab-labels" aria-controls="preview" data-view="labels">breaker labels</button>
+      <button role="tab" id="tab-load" aria-controls="preview" data-view="load">loading + checks</button>
+    </div>
+    <div class="oopts" id="opts-card">
+      <label class="inl">size <select id="o_cardSize"></select></label>
+      <label class="inl">custom W×H in <input id="o_cardW" type="number" step="0.25" min="2" max="11" class="n4"> × <input id="o_cardH" type="number" step="0.25" min="2" max="17" class="n4"></label>
+      <label class="inl"><input id="o_notes" type="checkbox"> notes</label>
+      <label class="inl"><input id="o_tally" type="checkbox"> load tally</label>
+      <label class="inl"><input id="o_all" type="checkbox"> all panels</label>
+    </div>
+    <div class="oopts" id="opts-labels">
+      <label class="inl">sheet <select id="o_lblPreset"></select></label>
+      <label class="inl">start at label # <input id="o_startAt" type="number" min="1" max="200" class="n4"></label>
+      <label class="inl"><input id="o_spares" type="checkbox"> spares</label>
+      <label class="inl"><input id="o_lblPanel" type="checkbox"> panel name</label>
+      <details class="inl"><summary>geometry</summary>
+        <span class="geo">cols <input id="g_cols" type="number" min="1" max="12" class="n3"> rows <input id="g_rows" type="number" min="1" max="40" class="n3">
+        w <input id="g_w" type="number" step="0.01" class="n4"> h <input id="g_h" type="number" step="0.01" class="n4">
+        top <input id="g_top" type="number" step="0.01" class="n4"> left <input id="g_left" type="number" step="0.01" class="n4">
+        hgap <input id="g_hgap" type="number" step="0.01" class="n4"> vgap <input id="g_vgap" type="number" step="0.01" class="n4"> <span id="g_unit"></span></span>
+      </details>
+    </div>
+    <div class="oopts" id="opts-load"><span class="hint">soft checks only — not code advice</span></div>
+    <div id="preview" class="preview" role="tabpanel" tabindex="0"></div>
+  </section>
+</main>
+<footer class="foot noprint">MIT · <a href="https://github.com/traviscj/loadcenterlabels">source</a> · data stays in this browser (localStorage) unless you export or share a link · not electrical or code advice</footer>
+<script type="module" src="./src/main.ts"></script>
+</body>
+</html>
